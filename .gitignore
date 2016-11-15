@@ -3,3 +3,4 @@ target/
 .idea/
 death.log
 dependency-reduced-pom.xml
+pom.xml.versionsBackup
