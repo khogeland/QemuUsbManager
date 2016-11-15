@@ -26,11 +26,11 @@ public class UsbDeviceAddCommand extends QApiCommand<UsbDeviceAddCommand.Argumen
 
         @JsonProperty("vendorid")
         @Nonnull
-        public short vendorId;
+        public int vendorId;
 
         @JsonProperty("productid")
         @Nonnull
-        public short productId;
+        public int productId;
 
         @JsonProperty("bus")
         @Nonnull
@@ -41,8 +41,9 @@ public class UsbDeviceAddCommand extends QApiCommand<UsbDeviceAddCommand.Argumen
 
         public Arguments(String driver, short vendorId, short productId, String bus) {
             this.driver = driver;
-            this.vendorId = vendorId;
-            this.productId = productId;
+            // QMP accepts unsigned 32-bit integers
+            this.vendorId = vendorId & 0xffff;
+            this.productId = productId & 0xffff;
             this.bus = bus;
         }
     }

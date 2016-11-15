@@ -1,7 +1,8 @@
 # QEMU USB Manager
-This is a graphical USB manager for QEMU, because copy-pasting lsusb output is a pain. The UI uses the Lanterna library and is intended to be run on the command line, but should work acceptably if run as a desktop application.
 
-Disclaimer: This is early WIP. It mostly works, but sometimes breaks.
+![Example screenshot](/screenshot.png)
+
+This is a graphical USB manager for QEMU, because copy-pasting lsusb output is a pain. The UI uses the Lanterna library and is intended to be run on the command line, but should work acceptably if run as a desktop application.
 
 ## Build
 ```bash
@@ -21,7 +22,6 @@ Start QEMU with a QMP server, an xHCI bus named `xhci`, and an eHCI bus named `e
 
 Now you can start the USB manager:
 ```bash
-# This may need to be run privileged depending on your USB permissions.
 java -jar target/QemuUsbManager-0.1-SNAPSHOT.jar localhost 4565
 ```
 

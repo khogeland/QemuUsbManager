@@ -38,7 +38,7 @@ public class UsbManagerGui {
         box = new TextBox(new TerminalSize(80, 20));
         box.setReadOnly(true);
         deviceList = createEmptyList();
-        window = new BasicWindow("QMP USB Manager");
+        window = new BasicWindow("QEMU USB Manager");
         window.setHints(Collections.singletonList(Window.Hint.FULL_SCREEN));
         window.setTheme(new SimpleTheme(TextColor.ANSI.WHITE, TextColor.ANSI.DEFAULT));
         window.setComponent(createPanel(deviceList, box));
