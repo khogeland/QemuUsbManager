@@ -7,6 +7,8 @@ import org.anarres.qemu.qapi.api.QomGetCommand;
 import org.anarres.qemu.qapi.api.QomListCommand;
 import org.anarres.qemu.qapi.common.QApiConnection;
 import org.anarres.qemu.qapi.common.QApiException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,29 +19,39 @@ import java.util.List;
 public class QmpClient {
 
     private QApiConnection connection;
+    private Logger log = LoggerFactory.getLogger(this.getClass());
 
     public QmpClient(String host, int port) throws IOException {
+        log.info("Connecting to QMP server on {}:{}", host, port);
         connection = new QApiConnection(host, port);
     }
 
     public void addDevice(short vendorId, short productId, boolean usb3) throws IOException {
+        String deviceLabel = String.format("%04X:%04X", vendorId, productId);
+        log.info("Attempting to attach device {} (USB 3.x: {})", deviceLabel, usb3);
         List<UsbDevice> devices = listXhciEhciBus0Devices();
         if (!devices.stream().anyMatch(usbDevice -> usbDevice.getVendorId() == vendorId && usbDevice.getProductId() == productId)) {
             UsbDeviceAddCommand command = new UsbDeviceAddCommand("usb-host", vendorId, productId, usb3 ? "xhci.0" : "ehci.0");
             connection.invoke(command);
+            log.info("Attached device {}.", deviceLabel);
+        } else {
+            log.info("Device {} already attached.", deviceLabel);
         }
     }
 
     public void delDevice(short vendorId, short productId) throws IOException {
+        String deviceLabel = String.format("%04X:%04X", vendorId, productId);
+        log.info("Attempting to delete device {}", deviceLabel);
         List<UsbDevice> devices = listXhciEhciBus0Devices();
         devices.stream().filter( d -> d.getVendorId() == vendorId && d.getProductId() == productId).forEach(usbDevice -> {
             DeviceDelCommand command = new DeviceDelCommand(usbDevice.getQomPath());
             try {
                 connection.invoke(command).getResult();
-            } catch (QApiException | IOException ignored) {
-                //TODO: Logging. Until then, whatever.
+            } catch (QApiException | IOException e) {
+                log.warn("Exception while deleting device {}. Device may still be attached.", deviceLabel, e);
             }
         });
+        log.info("Deleted device {}.", deviceLabel);
     }
 
     public List<UsbDevice> listXhciEhciBus0Devices() throws IOException {
@@ -67,7 +79,6 @@ public class QmpClient {
                 } catch (QApiException ignored) {
                     // Not a valid USB device. Whatever, ignore. There shouldn't be non-USB
                     // QOM objects in this list but apparently there are.
-                    // TODO: Log this. Maybe it'll be useful at some point.
                 }
             }
             return devices;

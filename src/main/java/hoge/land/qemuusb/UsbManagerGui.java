@@ -10,12 +10,16 @@ import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 import hoge.land.qemuusb.qmp.QmpClient;
 import hoge.land.qemuusb.usb.UsbDeviceNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
 public class UsbManagerGui {
+
+    private Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final QmpClient client;
     private MultiWindowTextGUI textGUI;
@@ -37,7 +41,8 @@ public class UsbManagerGui {
         textGUI = new MultiWindowTextGUI(screen, new DefaultWindowManager(), new EmptySpace(TextColor.ANSI.DEFAULT));
         box = new TextBox(new TerminalSize(80, 20));
         box.setReadOnly(true);
-        deviceList = createEmptyList();
+        deviceList = new CheckBoxList<>();
+        addListenerToCheckBoxList(deviceList);
         window = new BasicWindow("QEMU USB Manager");
         window.setHints(Collections.singletonList(Window.Hint.FULL_SCREEN));
         window.setTheme(new SimpleTheme(TextColor.ANSI.WHITE, TextColor.ANSI.DEFAULT));
@@ -45,7 +50,7 @@ public class UsbManagerGui {
     }
 
     public void setDeviceList(List<UsbDeviceNode> devices) throws IOException {
-        CheckBoxList<UsbDeviceNode> newList = createEmptyList();
+        CheckBoxList<UsbDeviceNode> newList = new CheckBoxList<>();
         UsbDeviceNode selectedItem = deviceList.getSelectedItem();
         List<QmpClient.UsbDevice> actualDevices = client.listXhciEhciBus0Devices();
         int selectedIndex = deviceList.getSelectedIndex();
@@ -63,8 +68,8 @@ public class UsbManagerGui {
             newList.setSelectedIndex((newList.getItems().size() >= selectedIndex + 1)
                     ? selectedIndex : newList.getItems().size() - 1);
         }
+        addListenerToCheckBoxList(newList);
         deviceList = newList;
-
         window.setComponent(createPanel(deviceList, box));
     }
 
@@ -78,22 +83,20 @@ public class UsbManagerGui {
         return panel;
     }
 
-    private CheckBoxList<UsbDeviceNode> createEmptyList() {
-        CheckBoxList<UsbDeviceNode> newList = new CheckBoxList<>();
-        newList.addListener((itemIndex, checked) -> {
+    private void addListenerToCheckBoxList(CheckBoxList<UsbDeviceNode> list) {
+        list.addListener((itemIndex, checked) -> {
+            UsbDeviceNode device = list.getItemAt(itemIndex);
             try {
-            UsbDeviceNode device = newList.getItemAt(itemIndex);
                 if (checked) {
-                        client.addDevice(device.getVendorId(), device.getProductId(), device.isUSB3());
+                    client.addDevice(device.getVendorId(), device.getProductId(), device.isUSB3());
                 } else {
-                        client.delDevice(device.getVendorId(), device.getProductId());
+                    client.delDevice(device.getVendorId(), device.getProductId());
                 }
             } catch (Exception e) {
-                // Uhh... TODO
-                UsbManagerMain.die(e);
+                log.error("Uncaught exception while managing device {}", device.getName(), e);
             }
         });
-        return newList;
+
     }
 
     public void start() {
